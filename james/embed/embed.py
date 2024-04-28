@@ -9,6 +9,8 @@ import torch
 import tqdm
 import numpy as np
 from sklearn.decomposition import PCA
+from torch.quantization import quantize_dynamic
+from torch.nn import Embedding, Linear
 
 from sentence_transformers import SentenceTransformer, models
 
@@ -45,8 +47,7 @@ def do_embedding(model, series, batch_size=128):
   print(f"Time Taken: {(end-start):0.4f} s")
   return np.vstack(embeddings), end - start
 
-
-def do_pca(embeddings, pca_dim):
+def do_pca_embeddings(embeddings, pca_dim):
   pca = PCA(n_components=pca_dim)
   return pca.fit_transform(embeddings)
 
@@ -71,6 +72,12 @@ def pca_model(model, fit_embeddings, pca_dim, save_model_path=None):
 
   return model
 
+def quantize_model(model, quantization_method="base"):
+  if quantization_method == "base":
+    q_model = quantize_dynamic(model, {Linear}, dtype=torch.qint8)
+  else:
+    raise ValueError("Invalid quantization method")
+  return q_model
 
 text_embeddings, time_taken = do_embedding(
   model, dataframe["text"], batch_size=args.batch_size)

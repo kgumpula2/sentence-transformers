@@ -45,7 +45,15 @@ model_name = "all-distilroberta-v1"
 # Load a named sentence model (based on BERT). This will download the model from our server.
 # Alternatively, you can also pass a filepath to SentenceTransformer()
 model = SentenceTransformer(model_name, device="cpu")
-q_model = quantize_dynamic(model, {Linear, Embedding})
+
+# find fix for embedding layers later
+# qconfig_dict = {
+#     Embedding : torch.ao.quantization.float_qparams_weight_only_qconfig,
+#     Linear: torch.ao.quantization.default_dynamic_qconfig
+# }
+# q_model = quantize_dynamic(model, qconfig_dict)
+
+q_model = quantize_dynamic(model, {Linear}, dtype=torch.qint8)
 
 
 # Convert the dataset to a DataLoader ready for training
