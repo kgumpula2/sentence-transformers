@@ -19,7 +19,6 @@ parser.add_argument("--tsv", required=True, type=str)
 parser.add_argument("--batch_size", type=int, default=128)
 parser.add_argument("--output_file", type=str, help="should end with .npy")
 parser.add_argument("--model_name", type=str, default="all-MiniLM-L6-v2")
-parser.add_argument("--embedding_dimension", type=int, default=)
 
 args = parser.parse_args()
 print(vars(args), flush=True)
@@ -46,38 +45,6 @@ def do_embedding(model, series, batch_size=128):
   end = time.time()
   print(f"Time Taken: {(end-start):0.4f} s")
   return np.vstack(embeddings), end - start
-
-def do_pca_embeddings(embeddings, pca_dim):
-  pca = PCA(n_components=pca_dim)
-  return pca.fit_transform(embeddings)
-
-def pca_model(model, fit_embeddings, pca_dim, save_model_path=None):
-  # Compute PCA on the train embeddings matrix
-  pca = PCA(n_components=pca_dim)
-  pca.fit(fit_embeddings)
-  pca_comp = np.asarray(pca.components_)
-
-  # We add a dense layer to the model, so that it will produce directly embeddings with the new size
-  dense = models.Dense(
-      in_features=model.get_sentence_embedding_dimension(),
-      out_features=pca_dim,
-      bias=False,
-      activation_function=torch.nn.Identity(),
-  )
-  dense.linear.weight = torch.nn.Parameter(torch.tensor(pca_comp))
-  model.add_module("dense", dense)
-
-  if save_model_path:
-    model.save(save_model_path)
-
-  return model
-
-def quantize_model(model, quantization_method="base"):
-  if quantization_method == "base":
-    q_model = quantize_dynamic(model, {Linear}, dtype=torch.qint8)
-  else:
-    raise ValueError("Invalid quantization method")
-  return q_model
 
 text_embeddings, time_taken = do_embedding(
   model, dataframe["text"], batch_size=args.batch_size)
