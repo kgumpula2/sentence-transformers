@@ -29,7 +29,10 @@ print(f"{embeddings.shape=}", flush=True)
 pca = pk.load(open(args.pca_matrix_file,'rb')) 
 print(f"Applying PCA Matrix from: {args.pca_matrix_file}", flush=True)
 
+start = time.time()
 reduced_embeddings = pca.transform(embeddings)
+end = time.time()
+print(f"Time Taken: {(end-start):0.4f} s")
 print(f"{reduced_embeddings.shape=}", flush=True)
 
 print(f"Saving reduced embeddings to: {args.output_embeddings_file}", flush=True)
