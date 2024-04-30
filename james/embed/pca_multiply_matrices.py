@@ -22,12 +22,16 @@ parser.add_argument("--pca_matrix_file", type=str)
 args = parser.parse_args()
 print(vars(args), flush=True)
 
-def multiply_matrices(embeddings, pca_matrix, output_embeddings_file):
-  print(f"Applying PCA Matrix from: {args.pca_matrix_file}", flush=True)
-  reduced_embeddings = embeddings@pca_matrix.T
+embeddings = np.load(args.input_embeddings_file)
+print(f"{embeddings.shape=}", flush=True)
 
-  print(f"Saving reduced embeddings to: {output_embeddings_file}", flush=True)
-  os.makedirs(os.path.dirname(output_embeddings_file), exist_ok=True)
-  np.save(output_embeddings_file, reduced_embeddings)
+pca_matrix = np.load(args.pca_matrix_file)
+print(f"{pca_matrix.shape=}", flush=True)
 
-multiply_matrices(np.load(args.input_embeddings_file), np.load(args.pca_matrix_file), args.output_embeddings_file)
+print(f"Applying PCA Matrix from: {args.pca_matrix_file}", flush=True)
+reduced_embeddings = embeddings@pca_matrix.T
+print(f"{reduced_embeddings.shape=}", flush=True)
+
+print(f"Saving reduced embeddings to: {args.output_embeddings_file}", flush=True)
+os.makedirs(os.path.dirname(args.output_embeddings_file), exist_ok=True)
+np.save(args.output_embeddings_file, reduced_embeddings)
