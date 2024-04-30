@@ -19,6 +19,7 @@ parser.add_argument("--tsv", required=True, type=str)
 parser.add_argument("--batch_size", type=int, default=128)
 parser.add_argument("--output_file", type=str, help="should end with .npy")
 parser.add_argument("--model_name", type=str, default="all-MiniLM-L6-v2")
+parser.add_argument("--pca_matrix_file", type=str, default=None)
 
 args = parser.parse_args()
 print(vars(args), flush=True)
@@ -48,6 +49,11 @@ def do_embedding(model, series, batch_size=128):
 
 text_embeddings, time_taken = do_embedding(
   model, dataframe["text"], batch_size=args.batch_size)
+if args.pca_matrix_file is not None:
+  print(f"Applying PCA Matrix from: {args.pca_matrix_file}", flush=True)
+  pca_comp = np.load(args.pca_matrix_file)
+  text_embeddings = text_embeddings@pca_comp.T
+
 print(f"{time_taken=}", flush=True)
 print(f"{text_embeddings.shape=}", flush=True)
 
