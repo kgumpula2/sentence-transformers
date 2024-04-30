@@ -27,7 +27,7 @@ print(vars(args), flush=True)
 model = SentenceTransformer(args.model_name).cuda()
 print(f"Model ({args.model_name}) Initialized", flush=True)
 
-def pca_model(model, embeddings, pca_dim, save_matrix_path=None):
+def pca_matrix(model, embeddings, pca_dim, save_matrix_path=None):
   # Compute PCA on the train embeddings matrix
   pca = PCA(n_components=pca_dim)
 
@@ -43,4 +43,4 @@ def pca_model(model, embeddings, pca_dim, save_matrix_path=None):
   os.makedirs(os.path.dirname(args.output_embeddings_file), exist_ok=True)
   np.save(args.output_embeddings_file, reduced_embeddings)
 
-pca_model(model, np.load(args.input_file), args.embed_dim, args.output_matrix_file)
+pca_matrix(model, np.load(args.input_file), args.embed_dim, args.output_matrix_file)
