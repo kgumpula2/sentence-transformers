@@ -26,7 +26,6 @@ args = parser.parse_args()
 print(vars(args), flush=True)
 
 def pca_matrix(embeddings, pca_dim):
-  start = time.time()
   # Compute PCA on the train embeddings matrix
   pca = PCA(n_components=pca_dim)
 
