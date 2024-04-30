@@ -11,13 +11,14 @@ import numpy as np
 from sklearn.decomposition import PCA
 from torch.quantization import quantize_dynamic
 from torch.nn import Embedding, Linear
+import pickle as pk
 
 from sentence_transformers import SentenceTransformer, models
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input_embeddings_file", type=str, help="should end with .npy")
 parser.add_argument("--output_embeddings_file", type=str, help="should end with .npy")
-parser.add_argument("--pca_matrix_file", type=str)
+parser.add_argument("--pca_matrix_file", type=str, help="should end with .pkl")
 
 args = parser.parse_args()
 print(vars(args), flush=True)
@@ -25,11 +26,10 @@ print(vars(args), flush=True)
 embeddings = np.load(args.input_embeddings_file)
 print(f"{embeddings.shape=}", flush=True)
 
-pca_matrix = np.load(args.pca_matrix_file)
-print(f"{pca_matrix.shape=}", flush=True)
-
+pca = pk.load(open(args.pca_matrix_file,'rb')) 
 print(f"Applying PCA Matrix from: {args.pca_matrix_file}", flush=True)
-reduced_embeddings = embeddings@pca_matrix.T
+
+reduced_embeddings = pca.transform(embeddings)
 print(f"{reduced_embeddings.shape=}", flush=True)
 
 print(f"Saving reduced embeddings to: {args.output_embeddings_file}", flush=True)
