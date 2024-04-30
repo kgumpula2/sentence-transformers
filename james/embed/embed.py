@@ -8,8 +8,11 @@ import pandas as pd
 import torch
 import tqdm
 import numpy as np
+from sklearn.decomposition import PCA
+from torch.quantization import quantize_dynamic
+from torch.nn import Embedding, Linear
 
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, models
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--tsv", required=True, type=str)
@@ -42,7 +45,6 @@ def do_embedding(model, series, batch_size=128):
   end = time.time()
   print(f"Time Taken: {(end-start):0.4f} s")
   return np.vstack(embeddings), end - start
-
 
 text_embeddings, time_taken = do_embedding(
   model, dataframe["text"], batch_size=args.batch_size)
