@@ -9,4 +9,5 @@ PYTHONPATH=. python james/retrieve/knn.py \
   --output_file_scores data/results/baseline/knn_D.npy \
   --nlist 10000 \
   --nprobe 200 \
+  --normalize \
   --d 384
