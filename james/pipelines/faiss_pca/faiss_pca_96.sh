@@ -5,10 +5,11 @@ PYTHONPATH=. python james/retrieve/knn.py \
   --residing_folder data/results/baseline \
   --collection_file collection_embeddings.npy \
   --query_file trels_embeddings.npy \
-  --output_file data/results/truncation/knn_48.npy \
-  --output_file_scores data/results/baseline/knn_48_D.npy \
+  --output_file data/results/faiss_pca/knn_96.npy \
+  --output_file_scores data/results/faiss_pca/knn_96_D.npy \
   --nlist 10000 \
   --nprobe 200 \
   --normalize \
   --d 384 \
-  --truncation_d 48
+  --pca_d 96 \
+  --normalize
