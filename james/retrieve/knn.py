@@ -25,6 +25,7 @@ parser.add_argument("--pca_load_from", type=str, default=None,
 parser.add_argument("--normalize", action="store_true",
                     help="whether to normalize")
 parser.add_argument("--post_quant", type=str, default=None)
+parser.add_argument("--faiss_index_string", type=str, default="")
 args = parser.parse_args()
 print(vars(args), flush=True)
 
@@ -45,6 +46,7 @@ pca_d, pca_load_from = args.pca_d, args.pca_load_from
 normalize = args.normalize
 post_quant_precision = args.post_quant
 k = args.k
+faiss_index_string = args.faiss_index_string
 
 corpus_embeddings = np.load(os.path.join(residing_folder, collection_file))
 query_embeddings = np.load(os.path.join(residing_folder, query_file))
@@ -99,8 +101,14 @@ print(f"Post-Processing: {query_embeddings.shape=}", flush=True)
 
 assert corpus_embeddings.shape[-1] == query_embeddings.shape[-1]
 faiss_d = corpus_embeddings.shape[-1]
-quantizer = faiss.IndexFlatIP(faiss_d)
-cpu_index = faiss.IndexIVFFlat(quantizer, faiss_d, nlist)
+if not faiss_index_string:
+  print("Using default Index IVF", flush=True)
+  quantizer = faiss.IndexFlatIP(faiss_d)
+  cpu_index = faiss.IndexIVFFlat(quantizer, faiss_d, nlist)
+else:
+  print(f"Using factory string: {faiss_index_string}", flush=True)
+  cpu_index = index = faiss.index_factory(
+    384, faiss_index_string, faiss.METRIC_INNER_PRODUCT)
 a = time.time()
 cpu_index.train(corpus_embeddings)
 cpu_index.add(corpus_embeddings)
