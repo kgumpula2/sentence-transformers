@@ -5,12 +5,72 @@ MS MARCO dev dataset and reports different performances metrices for cossine sim
 Usage:
 python eval_msmarco.py model_name [max_corpus_size_in_thousands]
 """
-
-from sentence_transformers import LoggingHandler, SentenceTransformer, evaluation, util
-import logging
 import sys
+from sentence_transformers import LoggingHandler, SentenceTransformer, util, evaluation
+# import InformationRetrievalEvaluator
+import logging
 import os
 import tarfile
+import torch
+from torch.quantization import quantize, quantize_dynamic
+from torch.nn import Embedding, Linear
+from quanto import Calibration, freeze, qint2, qint4, qint8, quantize
+import argparse
+
+    
+def named_module_tensors(module, recurse=False):
+    for named_parameter in module.named_parameters(recurse=recurse):
+      name, val = named_parameter
+      flag = True
+      if hasattr(val,"_data") or hasattr(val,"_scale"):
+        if hasattr(val,"_data"):
+          yield name + "._data", val._data
+        if hasattr(val,"_scale"):
+          yield name + "._scale", val._scale
+      else:
+        yield named_parameter
+
+    for named_buffer in module.named_buffers(recurse=recurse):
+      yield named_buffer
+
+def dtype_byte_size(dtype):
+    """
+    Returns the size (in bytes) occupied by one parameter of type `dtype`.
+    """
+    import re
+    if dtype == torch.bool:
+        return 1 / 8
+    bit_search = re.search(r"[^\d](\d+)$", str(dtype))
+    if bit_search is None:
+        raise ValueError(f"`dtype` is not a valid dtype: {dtype}.")
+    bit_size = int(bit_search.groups()[0])
+    return bit_size // 8
+
+def compute_module_sizes(model):
+    """
+    Compute the size of each submodule of a given model.
+    """
+    from collections import defaultdict
+    module_sizes = defaultdict(int)
+    for name, tensor in named_module_tensors(model, recurse=True):
+      size = tensor.numel() * dtype_byte_size(tensor.dtype)
+      name_parts = name.split(".")
+      for idx in range(len(name_parts) + 1):
+        module_sizes[".".join(name_parts[:idx])] += size
+
+    return module_sizes
+
+def return_quant(arg_int):
+    if arg_int == 2:
+        return qint2
+    elif arg_int == 4:
+        return qint4
+    elif arg_int == 8:
+        return qint8
+    elif arg_int == None:
+        return None
+    else:
+        raise ValueError("Invalid quantization bit")
 
 #### Just some code to print debug information to stdout
 logging.basicConfig(
@@ -18,16 +78,29 @@ logging.basicConfig(
 )
 #### /print debug information to stdout
 
-# Name of the SBERT model
-model_name = sys.argv[1]
+# write arg parser for system arguments used in code not using sys.argv
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", type=str, default="all-MiniLM-L6-v2")
+parser.add_argument("--corpus_max_size", type=int, default=0)
+parser.add_argument("--use_quantization", action="store_true")
+parser.add_argument("--weight_quant", type=int, default=2)
+parser.add_argument("--activation_quant", type=int, default=None)
+args = parser.parse_args()
 
 # You can limit the approx. max size of the corpus. Pass 100 as second parameter and the corpus has a size of approx 100k docs
-corpus_max_size = int(sys.argv[2]) * 1000 if len(sys.argv) >= 3 else 0
-
+corpus_max_size = args.corpus_max_size * 1000  
 
 ####  Load model
+model = SentenceTransformer(args.model)
 
-model = SentenceTransformer(model_name)
+if args.use_quantization:
+    module_sizes = compute_module_sizes(model)
+    print(f"The original model size is {module_sizes[''] * 1e-9} GB")
+    quantize(model, weights=return_quant(args.weight_quant), activations=args.activation_quant)
+    freeze(model)
+    module_sizes = compute_module_sizes(model)
+    print(f"The quantized model size is {module_sizes[''] * 1e-9} GB")
+    # model = torch.compile(model)
 
 ### Data files
 data_folder = "msmarco-data"
@@ -105,6 +178,7 @@ ir_evaluator = evaluation.InformationRetrievalEvaluator(
     show_progress_bar=True,
     corpus_chunk_size=100000,
     precision_recall_at_k=[10, 100],
+    mrr_at_k=[10, 100, 1000],
     name="msmarco dev",
 )
 

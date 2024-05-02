@@ -10,6 +10,7 @@ import os
 import numpy as np
 from typing import List, Dict, Optional, Set, Callable
 import heapq
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class InformationRetrievalEvaluator(SentenceEvaluator):
             "dot_score": dot_score,
         },  # Score function, higher=more similar
         main_score_function: str = None,
+        is_pipeline: bool = False,
     ):
         self.queries_ids = []
         for qid in queries:
@@ -71,6 +73,7 @@ class InformationRetrievalEvaluator(SentenceEvaluator):
         self.score_function_names = sorted(list(self.score_functions.keys()))
         self.main_score_function = main_score_function
         self.truncate_dim = truncate_dim
+        self.is_pipeline = is_pipeline
 
         if name:
             name = "_" + name
@@ -166,18 +169,23 @@ class InformationRetrievalEvaluator(SentenceEvaluator):
 
         # Compute embedding for the queries
         with nullcontext() if self.truncate_dim is None else model.truncate_sentence_embeddings(self.truncate_dim):
+            start_time = time.time()
             query_embeddings = model.encode(
                 self.queries,
                 show_progress_bar=self.show_progress_bar,
                 batch_size=self.batch_size,
                 convert_to_tensor=True,
             )
+            diff = time.time() - start_time
+            logging.info("Done queries after {:.2f} sec. {:.2f} sentences / sec".format(diff, len(self.queries) / diff))
+
 
         queries_result_list = {}
         for name in self.score_functions:
             queries_result_list[name] = [[] for _ in range(len(query_embeddings))]
 
         # Iterate over chunks of the corpus
+        corpus_embed_time = 0
         for corpus_start_idx in trange(
             0, len(self.corpus), self.corpus_chunk_size, desc="Corpus Chunks", disable=not self.show_progress_bar
         ):
@@ -188,12 +196,15 @@ class InformationRetrievalEvaluator(SentenceEvaluator):
                 with nullcontext() if self.truncate_dim is None else corpus_model.truncate_sentence_embeddings(
                     self.truncate_dim
                 ):
+                    start_time = time.time()
                     sub_corpus_embeddings = corpus_model.encode(
                         self.corpus[corpus_start_idx:corpus_end_idx],
-                        show_progress_bar=False,
+                        show_progress_bar=True,
                         batch_size=self.batch_size,
                         convert_to_tensor=True,
                     )
+                    diff = time.time() - start_time
+                    corpus_embed_time += diff
             else:
                 sub_corpus_embeddings = corpus_embeddings[corpus_start_idx:corpus_end_idx]
 
@@ -219,6 +230,8 @@ class InformationRetrievalEvaluator(SentenceEvaluator):
                             )  # heaqp tracks the quantity of the first element in the tuple
                         else:
                             heapq.heappushpop(queries_result_list[name][query_itr], (score, corpus_id))
+
+        logging.info("Done embedding corpus after {:.2f} sec. {:.2f} sentences / sec".format(corpus_embed_time, len(self.corpus) / corpus_embed_time))
 
         for name in queries_result_list:
             for query_itr in range(len(queries_result_list[name])):

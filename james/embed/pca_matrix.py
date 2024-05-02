@@ -32,7 +32,7 @@ def pca_matrix(embeddings, pca_dim):
   start = time.time()
   reduced_embeddings = pca.fit_transform(embeddings)
   end = time.time()
-  print(f"Time Taken: {(end-start):0.4f} s")
+  print(f"Time Taken: {(end-start):0.4f} s", flush=True)
 
   return reduced_embeddings, pca
 
