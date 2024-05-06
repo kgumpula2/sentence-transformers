@@ -12,11 +12,10 @@ import logging
 import os
 import tarfile
 import torch
-from torch.quantization import quantize, quantize_dynamic
+from torch.quantization import quantize, quantize_dynamic, float_qparams_weight_only_qconfig
 from torch.nn import Embedding, Linear
 from quanto import Calibration, freeze, qint2, qint4, qint8, quantize
 import argparse
-
     
 def named_module_tensors(module, recurse=False):
     for named_parameter in module.named_parameters(recurse=recurse):
@@ -60,13 +59,18 @@ def compute_module_sizes(model):
 
     return module_sizes
 
-def return_quant(arg_int):
+def print_model_size(mdl):
+    torch.save(mdl.state_dict(), "tmp.pt")
+    print("%.2f MB" %(os.path.getsize("tmp.pt")/1e6))
+    os.remove('tmp.pt')
+
+def return_quant(arg_int, use_torch=False):
     if arg_int == 2:
-        return qint2
+        return torch.qint2 if use_torch else qint2
     elif arg_int == 4:
-        return qint4
+        return torch.qint4 if use_torch else qint4
     elif arg_int == 8:
-        return qint8
+        return torch.qint8 if use_torch else qint8
     elif arg_int == None:
         return None
     else:
@@ -85,22 +89,39 @@ parser.add_argument("--corpus_max_size", type=int, default=0)
 parser.add_argument("--use_quantization", action="store_true")
 parser.add_argument("--weight_quant", type=int, default=2)
 parser.add_argument("--activation_quant", type=int, default=None)
+parser.add_argument("--use_torch", action="store_true")
+parser.add_argument("--use_cpu", action="store_true")
 args = parser.parse_args()
 
 # You can limit the approx. max size of the corpus. Pass 100 as second parameter and the corpus has a size of approx 100k docs
 corpus_max_size = args.corpus_max_size * 1000  
 
 ####  Load model
-model = SentenceTransformer(args.model)
+device = 'cpu' if args.use_cpu else None
+model = SentenceTransformer(args.model, device=device)
+print_model_size(model)
 
 if args.use_quantization:
-    module_sizes = compute_module_sizes(model)
-    print(f"The original model size is {module_sizes[''] * 1e-9} GB")
-    quantize(model, weights=return_quant(args.weight_quant), activations=args.activation_quant)
-    freeze(model)
-    module_sizes = compute_module_sizes(model)
-    print(f"The quantized model size is {module_sizes[''] * 1e-9} GB")
-    # model = torch.compile(model)
+    if args.use_torch:
+        ## dynamic quantization
+        # model = quantize_dynamic(model, {Linear}, dtype=return_quant(args.weight_quant, args.use_torch))
+        # static quantization
+        backend = "qnnpack"
+        model.qconfig = torch.quantization.get_default_qconfig(backend)
+        torch.backends.quantized.engine = backend
+        for _, mod in model.named_modules():
+            if isinstance(mod, torch.nn.Embedding):
+                mod.qconfig = torch.ao.quantization.float_qparams_weight_only_qconfig
+        model_static_quantized = torch.quantization.prepare(model, inplace=False)
+        model_static_quantized = torch.quantization.convert(model_static_quantized, inplace=False)
+        print_model_size(model)
+        print_model_size(model_static_quantized)
+    else:
+        print_model_size(model)
+        quantize(model, weights=return_quant(args.weight_quant), activations=args.activation_quant)
+        freeze(model)
+        model = torch.compile(model)
+        print_model_size(model)
 
 ### Data files
 data_folder = "msmarco-data"
