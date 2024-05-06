@@ -1,3 +1,27 @@
+# 15642 Project
+
+Our work is forked off of the sentence-transformers package.
+
+## Dataset
+
+The dataset used is from MS-MARCO (https://microsoft.github.io/msmarco/Datasets). The datasets can be pulled using `scripts/pull.sh`, and processed with `james/msmarco.ipynb`.
+
+## Experiments
+
+Experiments and corresponding shell scripts are identified in `james/pipelines`. Source code for processing is in `james/embed`, `james/retrieve`, and `james/msmarco`.
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!--- BADGES: START --->
 [![GitHub - License](https://img.shields.io/github/license/UKPLab/sentence-transformers?logo=github&style=flat&color=green)][#github-license]
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/sentence-transformers?logo=pypi&style=flat&color=blue)][#pypi-package]
