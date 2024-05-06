@@ -1,6 +1,6 @@
 # 15642 Project
 
-Our work is forked off of the sentence-transformers package, though we preserve the original README to maintain citations, and also have separated our own components from the rest of the repository.
+Our work is forked off of the sentence-transformers package, though we preserve the original README to maintain citations, and also have separated our own components from the rest of the repository (apart from the model quantization experiments since they were ran on a smaller corpus due to resource constraints).
 
 ## Dataset
 
