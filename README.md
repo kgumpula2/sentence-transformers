@@ -12,8 +12,16 @@ Experiments and corresponding shell scripts are identified in `james/pipelines`.
 
 Experiments regarding embedding-quantization and joint embedding-dimensionality reduction experiments can be found in `bao/`.
 
+## Dependencies
 
+Our code relies on the following dependencies:
+- https://github.com/pytorch/pytorch
+- https://github.com/huggingface/quanto
+- https://github.com/facebookresearch/faiss
+- https://github.com/pytorch/ao
+- https://scikit-learn.org/
 
+---
 
 
 
