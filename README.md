@@ -1,6 +1,6 @@
 # 15642 Project
 
-Our work is forked off of the sentence-transformers package.
+Our work is forked off of the sentence-transformers package, though we preserve the original README to maintain citations, and also have separated our own components from the rest of the repository.
 
 ## Dataset
 
@@ -10,6 +10,7 @@ The dataset used is from MS-MARCO (https://microsoft.github.io/msmarco/Datasets)
 
 Experiments and corresponding shell scripts are identified in `james/pipelines`. Source code for processing is in `james/embed`, `james/retrieve`, and `james/msmarco`.
 
+Experiments regarding embedding-quantization and joint embedding-dimensionality reduction experiments can be found in `bao/`.
 
 
 
