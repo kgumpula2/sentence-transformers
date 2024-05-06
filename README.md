@@ -12,7 +12,7 @@ Experiments and corresponding shell scripts are identified in `james/pipelines`.
 
 Experiments regarding embedding-quantization and joint embedding-dimensionality reduction experiments can be found in `bao/`.
 
-Model Quantization experiments can be found at examples/training/ms_marco/eval_msmarco.py (toggle custom quantization parameters that were implemented). SmoothQuant conversion is implemented at examples/training/ms_marco/smoothquant_conversion.py
+Model Quantization experiments can be found at 'examples/training/ms_marco/eval_msmarco.py' (toggle custom quantization parameters that were implemented). SmoothQuant conversion is implemented at 'examples/training/ms_marco/smoothquant_conversion.py' (custom file)
 
 ## Dependencies
 
